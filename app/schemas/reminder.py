@@ -15,6 +15,12 @@ class ReminderTypeSchema(str, Enum):
     MEDICATION = "medication"
     PREGNANCY_CHECKIN = "pregnancy_checkin"
     MENOPAUSE_WELLNESS = "menopause_wellness"
+    PERIOD_DUE = "period_due"
+    FERTILE_WINDOW = "fertile_window"
+    OVULATION = "ovulation"
+    ANC_VISIT = "anc_visit"
+    POSTNATAL_CHECK = "postnatal_check"
+    WEEKLY_WELLNESS = "weekly_wellness"
 
 
 class ReminderCreate(BaseModel):

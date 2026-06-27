@@ -50,6 +50,45 @@ async def test_register_user_accepts_sms_preferences(client: AsyncClient) -> Non
 
 
 @pytest.mark.asyncio
+async def test_register_user_accepts_extended_profile_fields(client: AsyncClient) -> None:
+    """Registration should accept the broader profile fields for lifelong care."""
+    payload = {
+        **REGISTER_PAYLOAD,
+        "full_name": "Grace Nakiyemba",
+        "district": "Kampala",
+        "country": "Uganda",
+        "voice_opt_in": True,
+        "whatsapp_opt_in": False,
+        "blood_group": "O+",
+        "allergies": "Penicillin",
+        "chronic_conditions": "Asthma",
+    }
+    response = await client.post("/api/users/register", json=payload)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["user"]["full_name"] == "Grace Nakiyemba"
+    assert data["user"]["district"] == "Kampala"
+    assert data["user"]["blood_group"] == "O+"
+
+
+@pytest.mark.asyncio
+async def test_create_health_event(client: AsyncClient) -> None:
+    """The health-event endpoint should create a health event for a user."""
+    await client.post("/api/users/register", json=REGISTER_PAYLOAD)
+    response = await client.post(
+        "/api/health-events",
+        json={
+            "phone_number": REGISTER_PAYLOAD["phone_number"],
+            "event_type": "period_started",
+            "event_date": "2026-06-27",
+            "metadata": {"notes": "Test event"},
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["event_type"] == "period_started"
+
+
+@pytest.mark.asyncio
 async def test_get_user(client: AsyncClient) -> None:
     """GET /api/users/{phone_number} should return the registered user."""
     await client.post("/api/users/register", json=REGISTER_PAYLOAD)

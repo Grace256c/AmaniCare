@@ -78,6 +78,25 @@ class ReminderService:
         Returns list of created Reminder objects.
         """
         created: list[Reminder] = []
+
+        async def add_if_missing(reminder_type: ReminderType, next_date: date) -> None:
+            existing = await self.reminder_repo.get_existing(
+                user_id=user.id,
+                phone_number=user.phone_number,
+                reminder_type=reminder_type,
+                next_date=next_date,
+            )
+            if existing is not None:
+                return
+
+            reminder = await self.reminder_repo.create(
+                user_id=user.id,
+                phone_number=user.phone_number,
+                reminder_type=reminder_type,
+                next_date=next_date,
+            )
+            created.append(reminder)
+
         # Menstrual health and fertility
         last_period = _parse_date(getattr(user, "last_period_date", None))
         cycle_length = getattr(user, "cycle_length", None) or 28
@@ -89,55 +108,21 @@ class ReminderService:
             fertile_end = fertile_day + timedelta(days=1)
 
             # 3 days before expected period
-            created.append(
-                await self.reminder_repo.create(
-                    user_id=user.id,
-                    phone_number=user.phone_number,
-                    reminder_type=ReminderType.PERIOD_DUE,
-                    next_date=next_period - timedelta(days=3),
-                )
-            )
+            await add_if_missing(ReminderType.PERIOD_DUE, next_period - timedelta(days=3))
             # on expected period date
-            created.append(
-                await self.reminder_repo.create(
-                    user_id=user.id,
-                    phone_number=user.phone_number,
-                    reminder_type=ReminderType.PERIOD,
-                    next_date=next_period,
-                )
-            )
+            await add_if_missing(ReminderType.PERIOD, next_period)
             # 2 days before fertile window
-            created.append(
-                await self.reminder_repo.create(
-                    user_id=user.id,
-                    phone_number=user.phone_number,
-                    reminder_type=ReminderType.FERTILE_WINDOW,
-                    next_date=fertile_start - timedelta(days=2),
-                )
-            )
+            await add_if_missing(ReminderType.FERTILE_WINDOW, fertile_start - timedelta(days=2))
 
         # Trying to conceive
-        if getattr(user, "life_stage", None) == "TryingToConceive" and last_period:
+        life_stage = getattr(user, "life_stage", None)
+        if life_stage in {"TryingToConceive", getattr(life_stage, "value", None)} and last_period:
             fertile_day = last_period + timedelta(days=cycle_length - 14)
             fertile_start = fertile_day - timedelta(days=5)
             # Fertile window starts tomorrow
-            created.append(
-                await self.reminder_repo.create(
-                    user_id=user.id,
-                    phone_number=user.phone_number,
-                    reminder_type=ReminderType.FERTILE_WINDOW,
-                    next_date=fertile_start + timedelta(days=1),
-                )
-            )
+            await add_if_missing(ReminderType.FERTILE_WINDOW, fertile_start + timedelta(days=1))
             # Ovulation reminder
-            created.append(
-                await self.reminder_repo.create(
-                    user_id=user.id,
-                    phone_number=user.phone_number,
-                    reminder_type=ReminderType.OVULATION,
-                    next_date=fertile_day,
-                )
-            )
+            await add_if_missing(ReminderType.OVULATION, fertile_day)
 
         # Pregnancy
         conception = _parse_date(getattr(user, "conception_date", None))
@@ -147,52 +132,20 @@ class ReminderService:
             # week reminders
             weeks = [12, 20, 28, 36]
             for w in weeks:
-                created.append(
-                    await self.reminder_repo.create(
-                        user_id=user.id,
-                        phone_number=user.phone_number,
-                        reminder_type=ReminderType.ANC_VISIT,
-                        next_date=conception + timedelta(weeks=w),
-                    )
-                )
+                await add_if_missing(ReminderType.ANC_VISIT, conception + timedelta(weeks=w))
 
         # Postpartum
         delivery = _parse_date(getattr(user, "delivery_date", None))
         if delivery:
-            created.append(
-                await self.reminder_repo.create(
-                    user_id=user.id,
-                    phone_number=user.phone_number,
-                    reminder_type=ReminderType.POSTNATAL_CHECK,
-                    next_date=delivery + timedelta(weeks=1),
-                )
-            )
-            created.append(
-                await self.reminder_repo.create(
-                    user_id=user.id,
-                    phone_number=user.phone_number,
-                    reminder_type=ReminderType.POSTNATAL_CHECK,
-                    next_date=delivery + timedelta(weeks=2),
-                )
-            )
-            created.append(
-                await self.reminder_repo.create(
-                    user_id=user.id,
-                    phone_number=user.phone_number,
-                    reminder_type=ReminderType.POSTNATAL_CHECK,
-                    next_date=delivery + timedelta(weeks=6),
-                )
-            )
+            await add_if_missing(ReminderType.POSTNATAL_CHECK, delivery + timedelta(weeks=1))
+            await add_if_missing(ReminderType.POSTNATAL_CHECK, delivery + timedelta(weeks=2))
+            await add_if_missing(ReminderType.POSTNATAL_CHECK, delivery + timedelta(weeks=6))
 
         # Menopause/perimenopause weekly wellness
-        if getattr(user, "life_stage", None) in ("Perimenopause", "Menopause"):
-            created.append(
-                await self.reminder_repo.create(
-                    user_id=user.id,
-                    phone_number=user.phone_number,
-                    reminder_type=ReminderType.WEEKLY_WELLNESS,
-                    next_date=datetime.utcnow().date() + timedelta(days=7),
-                )
+        if life_stage in {"Perimenopause", "Menopause", getattr(life_stage, "value", None)}:
+            await add_if_missing(
+                ReminderType.WEEKLY_WELLNESS,
+                datetime.utcnow().date() + timedelta(days=7),
             )
 
         return created

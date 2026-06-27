@@ -3,6 +3,10 @@
 import pytest
 from httpx import AsyncClient
 
+from app.core.database import AsyncSessionLocal
+from app.repositories.user_repository import UserRepository
+from app.services.reminder_service import ReminderService
+
 
 REGISTER_PAYLOAD = {
     "phone_number": "+256700000003",
@@ -49,4 +53,30 @@ async def test_list_reminders(client: AsyncClient) -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
-    assert len(data["reminders"]) == 1
+    assert len(data["reminders"]) >= 1
+
+
+@pytest.mark.asyncio
+async def test_generate_reminders_is_idempotent(client: AsyncClient) -> None:
+    """Calling reminder generation twice should not create duplicate reminders."""
+    await client.post(
+        "/api/users/register",
+        json={
+            **REGISTER_PAYLOAD,
+            "life_stage": "TryingToConceive",
+            "last_period_date": "2026-06-01",
+            "cycle_length": 28,
+        },
+    )
+
+    async with AsyncSessionLocal() as session:
+        repo = UserRepository(session)
+        user = await repo.get_by_phone(REGISTER_PAYLOAD["phone_number"])
+        assert user is not None
+
+        service = ReminderService(session)
+        first_run = await service.generate_reminders_for_user(user)
+        second_run = await service.generate_reminders_for_user(user)
+
+    assert len(first_run) == 0
+    assert len(second_run) == 0

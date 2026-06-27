@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from loguru import logger
 
-from app.api import advice, dashboard, health, reminders, sms, users, ussd
+from app.api import advice, dashboard, health, health_events, reminders, sms, users, ussd
 from app.core.config import get_settings
 from app.core.database import Base, engine
 from app.schemas.common import ErrorResponse
@@ -108,9 +108,6 @@ app.include_router(users.router)
 app.include_router(advice.router)
 app.include_router(ussd.router)
 app.include_router(reminders.router)
-from app.api import sms, dashboard
-
 app.include_router(sms.router)
 app.include_router(dashboard.router)
-app.include_router(sms.router)
-app.include_router(dashboard.router)
+app.include_router(health_events.router)

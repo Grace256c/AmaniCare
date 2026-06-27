@@ -12,6 +12,25 @@ class ReminderRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
+    async def get_existing(
+        self,
+        *,
+        user_id: int,
+        phone_number: str,
+        reminder_type: ReminderType,
+        next_date,
+    ) -> Reminder | None:
+        """Return an existing reminder matching the same key, if present."""
+        result = await self.db.execute(
+            select(Reminder).where(
+                Reminder.user_id == user_id,
+                Reminder.phone_number == phone_number,
+                Reminder.reminder_type == reminder_type,
+                Reminder.next_date == next_date,
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def create(
         self,
         *,
@@ -20,7 +39,16 @@ class ReminderRepository:
         reminder_type: ReminderType,
         next_date,
     ) -> Reminder:
-        """Schedule a new reminder."""
+        """Schedule a new reminder or return an existing one for the same key."""
+        existing_reminder = await self.get_existing(
+            user_id=user_id,
+            phone_number=phone_number,
+            reminder_type=reminder_type,
+            next_date=next_date,
+        )
+        if existing_reminder is not None:
+            return existing_reminder
+
         reminder = Reminder(
             user_id=user_id,
             phone_number=phone_number,
