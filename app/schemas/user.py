@@ -36,6 +36,12 @@ class UserCreate(UserBase):
     """Schema for user registration."""
     sms_opt_in: bool = Field(default=False, description="Whether the user opts in to SMS")
     preferred_language: str | None = Field(default=None, max_length=50)
+    # lifecycle fields
+    last_period_date: str | None = Field(default=None, description="YYYY-MM-DD")
+    cycle_length: int | None = Field(default=None, description="Average cycle length in days")
+    conception_date: str | None = Field(default=None, description="YYYY-MM-DD")
+    delivery_date: str | None = Field(default=None, description="YYYY-MM-DD")
+    menopause_preferences: str | None = Field(default=None, description="Comma-separated preferences")
 
 
 class UserUpdate(BaseModel):
@@ -70,6 +76,17 @@ class UserResponse(UserBase):
     preferred_language: str | None = None
     sms_opt_out_at: datetime | None = None
     last_sms_sent_at: datetime | None = None
+    # lifecycle fields
+    last_period_date: datetime | None = None
+    cycle_length: int | None = None
+    fertile_window_start: datetime | None = None
+    fertile_window_end: datetime | None = None
+    conception_date: datetime | None = None
+    estimated_due_date: datetime | None = None
+    pregnancy_week: int | None = None
+    delivery_date: datetime | None = None
+    postpartum_week: int | None = None
+    menopause_preferences: str | None = None
 
 
 class UserRegisterResponse(BaseModel):

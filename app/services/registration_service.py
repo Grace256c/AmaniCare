@@ -34,7 +34,12 @@ class RegistrationService:
             life_stage=data.life_stage,
             language=data.language.strip(),
             sms_opt_in=data.sms_opt_in,
-            preferred_language=data.preferred_language.strip(),
+            preferred_language=data.preferred_language.strip() if data.preferred_language else data.language.strip(),
+            last_period_date=data.last_period_date,
+            cycle_length=data.cycle_length,
+            conception_date=data.conception_date,
+            delivery_date=data.delivery_date,
+            menopause_preferences=data.menopause_preferences,
         )
         logger.info("User registered: {} ({})", user.name, user.phone_number)
         return user

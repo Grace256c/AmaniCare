@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.schemas.user import UserRegisterResponse, UserResponse, UserCreate, UserUpdate
 from app.services.registration_service import RegistrationService
+from app.services.reminder_service import ReminderService
 
 router = APIRouter(prefix="/api/users", tags=["Users"])
 
@@ -32,6 +33,13 @@ async def register_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
         ) from exc
+
+    # Generate stage-specific reminders (best-effort)
+    try:
+        reminder_service = ReminderService(service.repo.db)
+        await reminder_service.generate_reminders_for_user(user)
+    except Exception:
+        pass
 
     return UserRegisterResponse(user=UserResponse.model_validate(user))
 

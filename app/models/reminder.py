@@ -11,11 +11,16 @@ from app.core.database import Base
 
 class ReminderType(str, enum.Enum):
     """Types of health reminders supported by the MVP."""
-
     PERIOD = "period"
     MEDICATION = "medication"
     PREGNANCY_CHECKIN = "pregnancy_checkin"
     MENOPAUSE_WELLNESS = "menopause_wellness"
+    PERIOD_DUE = "period_due"
+    FERTILE_WINDOW = "fertile_window"
+    OVULATION = "ovulation"
+    ANC_VISIT = "anc_visit"
+    POSTNATAL_CHECK = "postnatal_check"
+    WEEKLY_WELLNESS = "weekly_wellness"
 
 
 class Reminder(Base):

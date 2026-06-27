@@ -5,6 +5,8 @@ from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, Enum, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Date
+from sqlalchemy import Text
 
 from app.core.database import Base
 
@@ -36,6 +38,17 @@ class User(Base):
     preferred_language: Mapped[str] = mapped_column(String(50), default="English", nullable=False)
     sms_opt_out_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_sms_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # lifecycle-specific fields
+    last_period_date: Mapped[datetime | None] = mapped_column(Date, nullable=True)
+    cycle_length: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    fertile_window_start: Mapped[datetime | None] = mapped_column(Date, nullable=True)
+    fertile_window_end: Mapped[datetime | None] = mapped_column(Date, nullable=True)
+    conception_date: Mapped[datetime | None] = mapped_column(Date, nullable=True)
+    estimated_due_date: Mapped[datetime | None] = mapped_column(Date, nullable=True)
+    pregnancy_week: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    delivery_date: Mapped[datetime | None] = mapped_column(Date, nullable=True)
+    postpartum_week: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    menopause_preferences: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

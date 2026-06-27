@@ -31,6 +31,12 @@ class UserRepository:
         preferred_language: str = "English",
         sms_opt_out_at: object | None = None,
         last_sms_sent_at: object | None = None,
+        last_period_date: object | None = None,
+        cycle_length: int | None = None,
+        conception_date: object | None = None,
+        estimated_due_date: object | None = None,
+        delivery_date: object | None = None,
+        menopause_preferences: str | None = None,
     ) -> User:
         """Create a new user record."""
         user = User(
@@ -43,6 +49,12 @@ class UserRepository:
             preferred_language=preferred_language,
             sms_opt_out_at=sms_opt_out_at,
             last_sms_sent_at=last_sms_sent_at,
+            last_period_date=last_period_date,
+            cycle_length=cycle_length,
+            conception_date=conception_date,
+            estimated_due_date=estimated_due_date,
+            delivery_date=delivery_date,
+            menopause_preferences=menopause_preferences,
         )
         self.db.add(user)
         await self.db.flush()

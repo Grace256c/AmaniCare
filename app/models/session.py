@@ -33,6 +33,11 @@ class USSDSession(Base):
     temp_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     temp_age: Mapped[int | None] = mapped_column(Integer, nullable=True)
     temp_life_stage: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    temp_last_period: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    temp_cycle_length: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    temp_conception_date: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    temp_delivery_date: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    temp_menopause_prefs: Mapped[str | None] = mapped_column(String(200), nullable=True)
     last_input: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
