@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: mamacare-db
+    environment:
+      POSTGRES_DB: mamacare
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mamacare"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build: .
+    container_name: mamacare-api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/mamacare
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-default}
+      DEEPSEEK_API_URL: ${DEEPSEEK_API_URL:-https://api.deepseek.ai/v1/generate}
+      AFRICAS_TALKING_USERNAME: ${AFRICAS_TALKING_USERNAME:-}
+      AFRICAS_TALKING_API_KEY: ${AFRICAS_TALKING_API_KEY:-}
+      AFRICAS_TALKING_SENDER_ID: ${AFRICAS_TALKING_SENDER_ID:-}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+    ports:
+      - "8000:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+volumes:
+  postgres_data:

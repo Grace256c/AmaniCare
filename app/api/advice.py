@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.schemas.advice import AdviceRequest, AdviceResponse
-from app.services.gemini_service import GeminiService
+from app.services.deepseek_service import DeepseekService
 from app.services.registration_service import RegistrationService
 
 router = APIRouter(prefix="/api/advice", tags=["Advice"])
@@ -16,18 +16,18 @@ def get_registration_service(db: AsyncSession = Depends(get_db)) -> Registration
     return RegistrationService(db)
 
 
-def get_gemini_service() -> GeminiService:
-    """Dependency injection for GeminiService."""
-    return GeminiService()
+def get_deepseek_service() -> DeepseekService:
+    """Dependency injection for DeepseekService."""
+    return DeepseekService()
 
 
 @router.post("", response_model=AdviceResponse)
 async def ask_advice(
     payload: AdviceRequest,
     registration_service: RegistrationService = Depends(get_registration_service),
-    gemini_service: GeminiService = Depends(get_gemini_service),
+    deepseek_service: DeepseekService = Depends(get_deepseek_service),
 ) -> AdviceResponse:
-    """Generate personalized health advice using Gemini AI."""
+    """Generate personalized health advice using Deepseek AI."""
     try:
         user = await registration_service.get_user(payload.phone_number)
     except ValueError as exc:
@@ -43,7 +43,7 @@ async def ask_advice(
         )
 
     try:
-        advice = await gemini_service.generate_advice(user, payload.question)
+        advice = await deepseek_service.generate_advice(user, payload.question)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

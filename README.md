@@ -1,11 +1,11 @@
 # MamaCare AI Backend
 
-AI-powered women's health companion backend for the MamaCare AI hackathon. Built with **FastAPI**, **SQLAlchemy 2.0**, and **Google Gemini**, with Africa's Talking USSD webhook support.
+AI-powered women's health companion backend for the MamaCare AI hackathon. Built with **FastAPI**, **SQLAlchemy 2.0**, and **Deepseek AI**, with Africa's Talking USSD webhook support.
 
 ## Features
 
 - User registration and profile management
-- AI health advice via Google Gemini (personalized by age, life stage, language)
+- AI health advice via Deepseek (personalized by age, life stage, language)
 - Africa's Talking USSD session flow (register + ask health questions)
 - Mock SMS reminder scheduler (period, medication, pregnancy, menopause)
 - Clean architecture: routes → services → repositories
@@ -22,7 +22,7 @@ AI-powered women's health companion backend for the MamaCare AI hackathon. Built
 | ORM | SQLAlchemy 2.0 (async) |
 | Migrations | Alembic |
 | Database | PostgreSQL (production) / SQLite (dev) |
-| AI | Google Gemini API (httpx) |
+| AI | Deepseek API (httpx) |
 | Logging | Loguru |
 | Testing | pytest + pytest-asyncio |
 
@@ -79,9 +79,12 @@ Edit `.env` with your values:
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL or SQLite connection string |
-| `GOOGLE_API_KEY` | Google AI Studio / Gemini API key |
+| `DEEPSEEK_API_KEY` | Deepseek API key |
+| `DEEPSEEK_MODEL` | Deepseek model identifier |
+| `DEEPSEEK_API_URL` | Deepseek API endpoint |
 | `AFRICAS_TALKING_USERNAME` | Africa's Talking username |
 | `AFRICAS_TALKING_API_KEY` | Africa's Talking API key |
+| `AFRICAS_TALKING_SENDER_ID` | Africa's Talking SMS sender ID |
 | `SECRET_KEY` | Application secret (change in production) |
 
 ## Running Locally
@@ -110,13 +113,14 @@ alembic revision --autogenerate -m "describe change"
 
 SQLite development uses auto-create on startup; Alembic is recommended for production.
 
-## Gemini Configuration
+## Deepseek Configuration
 
-1. Get an API key from [Google AI Studio](https://aistudio.google.com/apikey)
-2. Set `GOOGLE_API_KEY` in your `.env`
-3. Optional: set `GEMINI_MODEL` (default: `gemini-2.0-flash`)
+1. Get an API key from Deepseek.
+2. Set `DEEPSEEK_API_KEY` in your `.env`
+3. Optional: set `DEEPSEEK_MODEL` (default: `deepseek-default`)
+4. Optional: set `DEEPSEEK_API_URL` if your Deepseek endpoint differs from the default.
 
-The `GeminiService` sends personalized prompts built from the user profile. It never diagnoses or prescribes — educational guidance only.
+The `DeepseekService` sends personalized prompts built from the user profile. It never diagnoses or prescribes — educational guidance only.
 
 ## API Endpoints
 
@@ -224,7 +228,7 @@ Life stages: Teen, Regular, TryingToConceive, Pregnant, Postpartum, Perimenopaus
 pytest -v
 ```
 
-Tests cover health check, user registration, advice endpoint (Gemini mocked), USSD flow, and reminders.
+Tests cover health check, user registration, advice endpoint (Deepseek mocked), USSD flow, and reminders.
 
 ## Docker Deployment
 

@@ -26,14 +26,23 @@ class Settings(BaseSettings):
         description="SQLAlchemy database URL. PostgreSQL recommended for production.",
     )
 
-    google_api_key: str = Field(default="", description="Google Gemini API key")
-    gemini_model: str = Field(
-        default="gemini-2.0-flash",
-        description="Gemini model identifier",
+    deepseek_api_key: str = Field(default="", description="Deepseek API key")
+    deepseek_model: str = Field(
+        default="deepseek-default",
+        description="Deepseek model identifier",
+    )
+    deepseek_api_url: str = Field(
+        default="https://api.deepseek.ai/v1/generate",
+        description="Deepseek text generation endpoint",
     )
 
     africas_talking_username: str = Field(default="")
     africas_talking_api_key: str = Field(default="")
+    africas_talking_sender_id: str = Field(default="")
+    africas_talking_sms_url: str = Field(
+        default="https://api.africastalking.com/version1/messaging",
+        description="Africa's Talking SMS API endpoint",
+    )
 
     secret_key: str = Field(default="change-me-in-production")
 

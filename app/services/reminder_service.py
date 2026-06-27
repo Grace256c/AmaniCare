@@ -8,6 +8,7 @@ from app.models.reminder import Reminder, ReminderType
 from app.repositories.reminder_repository import ReminderRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.reminder import ReminderCreate
+from app.services.sms_service import AfricaTalkingSMSService
 
 
 class ReminderService:
@@ -23,6 +24,7 @@ class ReminderService:
     def __init__(self, db: AsyncSession) -> None:
         self.reminder_repo = ReminderRepository(db)
         self.user_repo = UserRepository(db)
+        self.sms_service = AfricaTalkingSMSService()
 
     async def schedule(self, data: ReminderCreate) -> Reminder:
         """
@@ -44,11 +46,15 @@ class ReminderService:
             next_date=data.next_date,
         )
         logger.info(
-            "Mock reminder scheduled: {} ({}) on {}",
+            "Reminder scheduled: {} ({}) on {}",
             phone,
             reminder_type.value,
             data.next_date,
         )
+        message = (
+            f"MamaCare reminder: {reminder_type.value.replace('_', ' ')} is due on {data.next_date}."
+        )
+        await self.sms_service.send_sms(phone, message)
         return reminder
 
     async def list_for_phone(self, phone_number: str) -> list[Reminder]:

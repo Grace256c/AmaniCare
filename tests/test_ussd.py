@@ -57,7 +57,7 @@ async def test_ussd_health_question_flow(client: AsyncClient) -> None:
     mock_advice = "Rest, hydrate, and seek care if symptoms worsen."
 
     with patch(
-        "app.services.gemini_service.GeminiService.generate_advice",
+        "app.services.deepseek_service.DeepseekService.generate_advice",
         new=AsyncMock(return_value=mock_advice),
     ):
         response = await client.post(

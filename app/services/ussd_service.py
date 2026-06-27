@@ -7,7 +7,7 @@ from app.core.security import validate_age, validate_phone_number
 from app.models.session import USSDFlow
 from app.models.user import LifeStage
 from app.repositories.ussd_session_repository import USSDSessionRepository
-from app.services.gemini_service import GeminiService
+from app.services.deepseek_service import DeepseekService
 from app.services.registration_service import RegistrationService
 
 # Africa's Talking response prefixes.
@@ -51,7 +51,7 @@ class USSDService:
         self.db = db
         self.session_repo = USSDSessionRepository(db)
         self.registration_service = RegistrationService(db)
-        self.gemini_service = GeminiService()
+        self.deepseek_service = DeepseekService()
 
     async def handle(
         self,
@@ -156,7 +156,7 @@ class USSDService:
         parts: list[str],
         session,
     ) -> str:
-        """Health question flow: collect question, call Gemini, return advice."""
+        """Health question flow: collect question, call Deepseek, return advice."""
         if len(parts) == 1:
             await self.session_repo.update(session, flow=USSDFlow.ASK_QUESTION)
             return f"{CON}Enter your health question:"
@@ -172,9 +172,9 @@ class USSDService:
                 return f"{END}You are not registered. Dial again and choose 1 to register."
 
             try:
-                advice = await self.gemini_service.generate_advice(user, question)
+                advice = await self.deepseek_service.generate_advice(user, question)
             except ValueError as exc:
-                logger.error("Gemini error during USSD for {}: {}", phone_number, exc)
+                logger.error("Deepseek error during USSD for {}: {}", phone_number, exc)
                 await self.session_repo.delete(session)
                 return f"{END}Sorry, we could not generate advice right now. Please try again later."
             except Exception as exc:

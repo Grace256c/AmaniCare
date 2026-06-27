@@ -26,7 +26,7 @@ async def test_advice_endpoint(client: AsyncClient) -> None:
     )
 
     with patch(
-        "app.services.gemini_service.GeminiService.generate_advice",
+        "app.services.deepseek_service.DeepseekService.generate_advice",
         new=AsyncMock(return_value=mock_advice),
     ):
         response = await client.post(
