@@ -33,6 +33,8 @@ class RegistrationService:
             age=data.age,
             life_stage=data.life_stage,
             language=data.language.strip(),
+            sms_opt_in=data.sms_opt_in,
+            preferred_language=data.preferred_language.strip(),
         )
         logger.info("User registered: {} ({})", user.name, user.phone_number)
         return user
@@ -70,6 +72,8 @@ class RegistrationService:
         age: int,
         life_stage: LifeStage,
         language: str = "English",
+        sms_opt_in: bool = False,
+        preferred_language: str = "English",
     ) -> User:
         """Register or update a user from the USSD flow."""
         existing = await self.repo.get_by_phone(phone_number)
@@ -80,6 +84,8 @@ class RegistrationService:
                 age=age,
                 life_stage=life_stage,
                 language=language,
+                sms_opt_in=sms_opt_in,
+                preferred_language=preferred_language,
             )
 
         return await self.repo.create(
@@ -88,4 +94,6 @@ class RegistrationService:
             age=age,
             life_stage=life_stage,
             language=language,
+            sms_opt_in=sms_opt_in,
+            preferred_language=preferred_language,
         )

@@ -3,7 +3,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, Integer, String, func
+from sqlalchemy import Boolean, DateTime, Enum, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -32,6 +32,10 @@ class User(Base):
     age: Mapped[int] = mapped_column(Integer, nullable=False)
     life_stage: Mapped[LifeStage] = mapped_column(Enum(LifeStage), nullable=False)
     language: Mapped[str] = mapped_column(String(50), default="English", nullable=False)
+    sms_opt_in: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    preferred_language: Mapped[str] = mapped_column(String(50), default="English", nullable=False)
+    sms_opt_out_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_sms_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

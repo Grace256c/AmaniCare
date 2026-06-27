@@ -16,6 +16,7 @@ class USSDFlow(str, enum.Enum):
     REGISTER_NAME = "register_name"
     REGISTER_AGE = "register_age"
     REGISTER_LIFE_STAGE = "register_life_stage"
+    REGISTER_SMS_OPTIN = "register_sms_optin"
     ASK_QUESTION = "ask_question"
 
 

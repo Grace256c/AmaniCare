@@ -9,6 +9,51 @@ from app.models.user import LifeStage
 from app.repositories.ussd_session_repository import USSDSessionRepository
 from app.services.deepseek_service import DeepseekService
 from app.services.registration_service import RegistrationService
+from app.services.sms_service import AfricaTalkingSMSService
+
+# Africa's Talking response prefixes.
+CON = "CON "
+END = "END "
+
+LIFE_STAGE_MENU = "\n".join(
+    [
+        "Choose life stage:",
+        "1 Teen",
+        "2 Regular",
+        "3 TryingToConceive",
+        "4 Pregnant",
+        "5 Postpartum",
+        "6 Perimenopause",
+        "7 Menopause",
+    ]
+)
+
+LIFE_STAGE_MAP: dict[str, LifeStage] = {
+    "1": LifeStage.TEEN,
+    "2": LifeStage.REGULAR,
+    "3": LifeStage.TRYING_TO_CONCEIVE,
+    "4": LifeStage.PREGNANT,
+    "5": LifeStage.POSTPARTUM,
+    "6": LifeStage.PERIMENOPAUSE,
+    "7": LifeStage.MENOPAUSE,
+}
+
+
+"""USSD menu flow handler for Africa's Talking."""
+
+from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import datetime
+
+from app.core.security import validate_age, validate_phone_number
+from app.models.session import USSDFlow
+from app.models.user import LifeStage
+from app.repositories.ussd_session_repository import USSDSessionRepository
+from app.services.deepseek_service import DeepseekService
+from app.services.registration_service import RegistrationService
+from app.services.sms_service import AfricaTalkingSMSService
+from app.repositories.sms_message_repository import SMSMessageRepository
+from app.repositories.user_repository import UserRepository
 
 # Africa's Talking response prefixes.
 CON = "CON "
@@ -52,6 +97,7 @@ class USSDService:
         self.session_repo = USSDSessionRepository(db)
         self.registration_service = RegistrationService(db)
         self.deepseek_service = DeepseekService()
+        self.sms_service = AfricaTalkingSMSService()
 
     async def handle(
         self,
@@ -135,15 +181,60 @@ class USSDService:
             if life_stage is None:
                 return f"{CON}Invalid choice.\n{LIFE_STAGE_MENU}"
 
+            # store life stage and prompt for SMS opt-in
+            await self.session_repo.update(
+                session,
+                flow=USSDFlow.REGISTER_SMS_OPTIN,
+                temp_life_stage=life_stage.value,
+            )
+            return f"{CON}Would you like SMS reminders?\n1 Yes\n2 No"
+
+        if len(parts) == 5:
+            opt = parts[4].strip()
+            if opt not in ("1", "2"):
+                return f"{CON}Invalid choice.\nWould you like SMS reminders?\n1 Yes\n2 No"
+
+            sms_opt_in = opt == "1"
+
             name = session.temp_name or parts[1].strip()
             age = session.temp_age or int(parts[2].strip())
+            life_stage_value = session.temp_life_stage or parts[3].strip()
+            life_stage = LIFE_STAGE_MAP.get(life_stage_value) if isinstance(life_stage_value, str) else life_stage_value
 
-            await self.registration_service.register_from_ussd(
+            user = await self.registration_service.register_from_ussd(
                 phone_number=phone_number,
                 name=name,
                 age=age,
                 life_stage=life_stage,
+                sms_opt_in=sms_opt_in,
             )
+
+            # log and send welcome SMS if opted-in
+            sms_repo = SMSMessageRepository(self.db)
+            template = "welcome"
+            # dedupe: do not send welcome twice within 24h
+            recent = await sms_repo.has_recent_message(user_id=user.id, template_name=template)
+            if sms_opt_in and not recent:
+                message = (
+                    "Welcome to MamaCare AI. You are now registered for personalized women's health support. Reply STOP anytime to opt out."
+                )
+                await sms_repo.log_message(
+                    phone_number=phone_number,
+                    message_body=message,
+                    direction="outbound",
+                    template_name=template,
+                    user_id=user.id,
+                )
+                # send via SMS service (best-effort, do not block)
+                try:
+                    sms = AfricaTalkingSMSService()
+                    ok = await sms.send_sms(phone_number, message)
+                    if ok:
+                        user.last_sms_sent_at = datetime.utcnow()
+                        await self.registration_service.repo.update(user)
+                except Exception:
+                    logger.exception("Failed to send welcome SMS for {}", phone_number)
+
             await self.session_repo.delete(session)
             logger.info("USSD registration complete for {}", phone_number)
             return f"{END}Registration complete. Thank you, {name}!"
@@ -182,8 +273,31 @@ class USSDService:
                 await self.session_repo.delete(session)
                 return f"{END}Sorry, something went wrong. Please try again later."
 
-            await self.session_repo.delete(session)
             truncated = advice[:600] + "..." if len(advice) > 600 else advice
+
+            # send follow-up SMS summary if user opted in
+            try:
+                sms_repo = SMSMessageRepository(self.db)
+                template = "advice_followup"
+                recent = await sms_repo.has_recent_message(user_id=user.id, template_name=template)
+                if getattr(user, "sms_opt_in", False) and not recent:
+                    summary = f"MamaCare Summary:\n{truncated}"
+                    await sms_repo.log_message(
+                        phone_number=phone_number,
+                        message_body=summary,
+                        direction="outbound",
+                        template_name=template,
+                        user_id=user.id,
+                    )
+                    sms = AfricaTalkingSMSService()
+                    ok = await sms.send_sms(phone_number, summary)
+                    if ok:
+                        user.last_sms_sent_at = datetime.utcnow()
+                        await self.registration_service.repo.update(user)
+            except Exception:
+                logger.exception("Failed to send follow-up SMS for {}", phone_number)
+
+            await self.session_repo.delete(session)
             return f"{END}{truncated}"
 
         return f"{END}Invalid input. Please dial again."

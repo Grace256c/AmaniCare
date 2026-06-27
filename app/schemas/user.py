@@ -16,6 +16,10 @@ class UserBase(BaseModel):
     age: int = Field(..., ge=10, le=120, examples=[23])
     life_stage: LifeStage = Field(..., examples=[LifeStage.REGULAR])
     language: str = Field(default="English", max_length=50, examples=["English"])
+    sms_opt_in: bool = Field(default=False, examples=[True])
+    preferred_language: str = Field(default="English", max_length=50, examples=["English"])
+    sms_opt_out_at: datetime | None = Field(default=None)
+    last_sms_sent_at: datetime | None = Field(default=None)
 
     @field_validator("phone_number")
     @classmethod
@@ -30,6 +34,8 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     """Schema for user registration."""
+    sms_opt_in: bool = Field(default=False, description="Whether the user opts in to SMS")
+    preferred_language: str | None = Field(default=None, max_length=50)
 
 
 class UserUpdate(BaseModel):
@@ -39,6 +45,10 @@ class UserUpdate(BaseModel):
     age: int | None = Field(default=None, ge=10, le=120)
     life_stage: LifeStage | None = None
     language: str | None = Field(default=None, max_length=50)
+    sms_opt_in: bool | None = Field(default=None)
+    preferred_language: str | None = Field(default=None, max_length=50)
+    sms_opt_out_at: datetime | None = Field(default=None)
+    last_sms_sent_at: datetime | None = Field(default=None)
 
     @field_validator("age")
     @classmethod
@@ -56,6 +66,10 @@ class UserResponse(UserBase):
     id: int
     created_at: datetime
     updated_at: datetime
+    sms_opt_in: bool = False
+    preferred_language: str | None = None
+    sms_opt_out_at: datetime | None = None
+    last_sms_sent_at: datetime | None = None
 
 
 class UserRegisterResponse(BaseModel):

@@ -35,6 +35,21 @@ async def test_register_duplicate_user(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+async def test_register_user_accepts_sms_preferences(client: AsyncClient) -> None:
+    """Registration should persist SMS preferences for the hackathon MVP."""
+    payload = {
+        **REGISTER_PAYLOAD,
+        "sms_opt_in": True,
+        "preferred_language": "Luganda",
+    }
+    response = await client.post("/api/users/register", json=payload)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["user"]["sms_opt_in"] is True
+    assert data["user"]["preferred_language"] == "Luganda"
+
+
+@pytest.mark.asyncio
 async def test_get_user(client: AsyncClient) -> None:
     """GET /api/users/{phone_number} should return the registered user."""
     await client.post("/api/users/register", json=REGISTER_PAYLOAD)

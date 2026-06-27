@@ -27,6 +27,10 @@ class UserRepository:
         age: int,
         life_stage: LifeStage,
         language: str = "English",
+        sms_opt_in: bool = False,
+        preferred_language: str = "English",
+        sms_opt_out_at: object | None = None,
+        last_sms_sent_at: object | None = None,
     ) -> User:
         """Create a new user record."""
         user = User(
@@ -35,6 +39,10 @@ class UserRepository:
             age=age,
             life_stage=life_stage,
             language=language,
+            sms_opt_in=sms_opt_in,
+            preferred_language=preferred_language,
+            sms_opt_out_at=sms_opt_out_at,
+            last_sms_sent_at=last_sms_sent_at,
         )
         self.db.add(user)
         await self.db.flush()
